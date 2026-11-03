@@ -1,13 +1,24 @@
 package dev.loi.core.errors
 
+import kotlinx.coroutines.CopyableThrowable
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+
 /**
  * The base of all loi failures.
  *
  * Messages are fixed text. They never contain input text, vector values, or file paths.
  * An engine failure is attached as [cause]. Its message can contain input text or paths, so log it with care.
  * Cancellation uses the standard `CancellationException`, not this class.
+ *
+ * Coroutine stack-trace recovery does not copy these exceptions. The caller always gets the original
+ * instance, so [cause] is the engine failure and not a second copy of the same exception.
  */
-public sealed class LoiException(message: String, cause: Throwable? = null) : Exception(message, cause) {
+@OptIn(ExperimentalCoroutinesApi::class)
+public sealed class LoiException(message: String, cause: Throwable? = null) :
+    Exception(message, cause), CopyableThrowable<LoiException> {
+
+    /** Returns null to turn off stack-trace recovery for this exception. */
+    override fun createCopy(): LoiException? = null
 
     /** The model file is missing, is not a file, or cannot be read. */
     public class ModelFile(public val reason: Reason, cause: Throwable? = null) : LoiException(reason.message, cause) {
