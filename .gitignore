@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+# Anchored: an unanchored "build/" also hides source packages with that name.
+/build/
+/*/build/
+/models/*/build/
+.kotlin/
+local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Android
+*.apk
+*.aab
+captures/
+
+# Model files never enter the repo.
+*.litertlm
+*.tflite
