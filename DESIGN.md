@@ -186,13 +186,24 @@ class PreparedModel(val options: EngineOptions, val verification: VerificationRe
 
 `SerialEmbedder(spec, preparer, factory)` connects the three contracts. It is the only `Embedder` implementation in `core`.
 
+### LiteRT-LM runtime facts
+
+These facts come from the 0.18.0 AAR:
+
+- The native library is only for `arm64-v8a` and `x86_64`. loi does not run on `armeabi-v7a` devices.
+- The AAR has no R8 keep rules. `runtime-litertlm` adds the consumer rule `-keep class com.google.ai.edge.litertlm.** { *; }`.
+- The `EmbeddingEngine` constructor only stores the config. `initialize`, `computeEmbedding`, and `close` call the native library.
+- `Engine.setNativeMinLogSeverity` is a process-wide setting. The last engine to initialize sets it.
+
 ## 7. Threading, cancellation, and lifetime
 
 Each embedder owns one single-thread dispatcher. Only that thread touches the engine.
 The embedder holds at most one engine handle.
 
 Load is lazy. The first `embed` call, or an explicit `load()` call, verifies the file and initializes the engine.
-`embedAll` runs the texts in sequence on the same worker. forma sends one text for each SDK call. Step 6 of the build plan checks if `computeEmbedding` accepts a batch of separate texts.
+`embedAll` runs the texts in sequence on the same worker, with one SDK call for each text.
+LiteRT-LM 0.18.0 also has `computeEmbeddingBatch(List<List<InputData>>, EmbeddingOptions)`. Source: `javap` on the 0.18.0 AAR `classes.jar`.
+loi does not use it in version 1: one call for each text keeps the cancel point between texts. A batch port method is a possible later speed change, after a device measurement.
 
 Cancellation follows the coroutine rules:
 

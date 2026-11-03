@@ -4,6 +4,9 @@ plugins {
 
 android {
     namespace = "dev.loi.runtime.litertlm"
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
 }
 
 dependencies {
