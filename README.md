@@ -4,7 +4,8 @@ loi is a Kotlin library for on-device model inference on Android.
 You supply a model file and call the loi API. loi owns the engine, the worker thread, the file checks, and the cleanup.
 
 Version 1 supports EmbeddingGemma 2 Text 270M on LiteRT-LM.
-The library is in development. Read [DESIGN.md](DESIGN.md) for the API, the modules, and the build plan.
+The current version is 0.1.0. The API can change before version 1.0.
+Read [DESIGN.md](DESIGN.md) for the API, the modules, and the build plan.
 
 ## Device support
 
