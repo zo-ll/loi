@@ -71,6 +71,11 @@ embedder.release()   // On memory pressure. The next call loads the model again.
 embedder.close()     // At the end. The embedder rejects calls after this.
 ```
 
+`Loi.embeddingGemma2` does not read the file or load the model. The first `embed` call, or `load()`, does that on the worker thread.
+`Loi.storageRoot(context)` returns `<noBackupFilesDir>/loi`, the folder for the hash cache and the engine caches. An app can delete it to clear all loi state.
+
+`loi-android` exposes `core` and `models:embeddinggemma2` as API dependencies. `runtime-litertlm` is an implementation dependency, so app code cannot use LiteRT-LM types through loi.
+
 The core interface does not use Android types:
 
 ```kotlin
