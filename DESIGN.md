@@ -83,11 +83,20 @@ interface Embedder : AutoCloseable {
     override fun close()                          // Unloads the engine and rejects later calls.
 }
 
-class Embedding(val vector: FloatArray, val task: EmbeddingTask, val modelId: String) {
+class Embedding(vector: FloatArray, val task: EmbeddingTask, val modelId: String) {
     val dimensions: Int
-    fun cosine(other: Embedding): Float
+    operator fun get(index: Int): Float
+    fun toFloatArray(): FloatArray                // A new copy each time
+    fun cosine(other: Embedding): Float           // IllegalArgumentException if modelId or dimensions differ
 }
+
+data class ModelInfo(val id: String, val dimensions: Int, val verification: VerificationResult)
+// VerificationResult: Pending (before the first load), Known(artifact), Unknown(sha256), or Skipped
 ```
+
+`Embedding` keeps a private copy of the vector, so a caller cannot change it after construction.
+Its `toString()` does not contain vector values.
+`cosine` uses a programmer-error exception, not `LoiException`, because incompatible inputs are a bug in the caller.
 
 loi adds the task prefix to the text. The caller sends plain text.
 This rule reverses the forma rule, where the caller sent prefixed text and the native layer checked it.
