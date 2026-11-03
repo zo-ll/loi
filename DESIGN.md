@@ -307,7 +307,9 @@ It does not include the artifact. At level `STRICT`, only the known artifact loa
 At level `WARN` or `OFF`, a different file with the same output size gives the same ID. The caller must use `ModelInfo.verification` to keep such vectors apart.
 
 The caller text limit is 16,384 characters, from the forma limits. The prefix does not count.
-The SDK behavior for a text with more tokens than `maxInputTokens` is not known yet. Issue #8 checks it on the device.
+The SDK does not cut a text with more tokens than `maxInputTokens`. The SDK call fails, and loi throws `LoiException.Output(ENGINE_FAILURE)`.
+Issue #8 found this on a Nothing Phone (2a) with 1,500 words and `maxInputTokens = 128`.
+Warning: a text in the 16,384-character limit can have more than 2,048 tokens. Such a text also fails with `ENGINE_FAILURE`. See open question 3.
 
 ## 11. Extraction map
 
@@ -354,6 +356,7 @@ Each step ends with a green build and green tests.
 
 1. Does `embedAll` need a progress callback for long lists?
 2. Do we want an optional event listener for timings (load, verify, SDK call), as forma `InferenceObservations` did?
+3. Must a text with too many tokens fail with `Input(TOO_LONG)` and not `Output(ENGINE_FAILURE)`? loi cannot count tokens before the SDK call, so this needs a tokenizer or an SDK error code.
 
 Closed on 2026-11-03:
 

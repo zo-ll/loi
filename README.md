@@ -95,13 +95,18 @@ The app writes one `LOI_SAMPLE_RESULT <json>` line.
 ### Measurements
 
 The targets come from the forma model policy. They are targets, not gates.
+The values come from one run on 2026-11-03: Nothing Phone (2a), Android 16 (API 36), `arm64-v8a`, CPU backend, 256 dimensions.
 
 | Measure | Target | Nothing Phone (2a) |
 |---|---|---|
-| Cold load (`load()` with an empty cache) | 2 s or less | pending |
-| Warm load (hash cache and engine cache) | none | pending |
-| One query | 300 ms or less | pending |
-| Text longer than `maxInputTokens` | none | pending |
+| Cold load (`load()` with an empty cache) | 2 s or less | 984 ms (debug build) |
+| Warm load (hash cache and engine cache) | none | 313 ms in the same process (debug). 763–793 ms in a new process (minified). |
+| One query | 300 ms or less | 227 ms (debug). 180–193 ms (minified). The first minified run after the install took 369 ms. |
+| One document | none | 128–161 ms |
+| Text longer than `maxInputTokens` | none | Fails with `LoiException.Output(ENGINE_FAILURE)`. The SDK does not cut the text. |
+
+The cold load includes the SHA-256 pass and the engine cache build. The OS file cache had the model file, so a load after a phone restart can be slower.
+The similarity values were the same in the debug and minified builds: related 0.9314, unrelated 0.5944.
 
 ## Model files
 
