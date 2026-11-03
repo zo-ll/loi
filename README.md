@@ -48,6 +48,61 @@ It also runs the build-logic tests and the import-boundary check.
 
 The rules are in the root `build.gradle.kts`. The check writes its report to `build/reports/import-boundaries.txt`.
 
+## Sample app and device test
+
+The `sample` app picks a model file, makes an embedder, and shows the similarity of one query to two documents.
+The device test in `sample/src/androidTest` loads the real model file.
+
+Warning: the device test needs a phone with USB debugging. Do not use `connectedDebugAndroidTest`. It uninstalls the app after the run, and that deletes the model file.
+
+1. Download `embeddinggemma-2-text-270m.litertlm` from the Hugging Face repo `litert-community/embeddinggemma-2-text-270m-litert-lm`.
+2. Make sure that the file is the known artifact:
+
+   ```sh
+   sha256sum embeddinggemma-2-text-270m.litertlm
+   # 2d079ee2f6f066b1f368e8d7c819f55214eaef1d0513b312321901f30ab286fb
+   ```
+
+3. Install the sample app and its test APK:
+
+   ```sh
+   ./gradlew :sample:installDebug :sample:installDebugAndroidTest
+   ```
+
+4. Push the model file to the app-specific storage of the sample:
+
+   ```sh
+   adb shell mkdir -p /sdcard/Android/data/dev.loi.sample/files
+   adb push embeddinggemma-2-text-270m.litertlm /sdcard/Android/data/dev.loi.sample/files/
+   ```
+
+5. Run the device test. The `-r` output shows the `loi.*` measurements:
+
+   ```sh
+   adb shell am instrument -w -r dev.loi.sample.test/androidx.test.runner.AndroidJUnitRunner
+   ```
+
+To check the minified build, install it over the debug build and run it once:
+
+```sh
+./gradlew :sample:installRelease
+adb shell am start -n dev.loi.sample/.MainActivity --ez loi.autorun true
+adb logcat -s LoiSample
+```
+
+The app writes one `LOI_SAMPLE_RESULT <json>` line.
+
+### Measurements
+
+The targets come from the forma model policy. They are targets, not gates.
+
+| Measure | Target | Nothing Phone (2a) |
+|---|---|---|
+| Cold load (`load()` with an empty cache) | 2 s or less | pending |
+| Warm load (hash cache and engine cache) | none | pending |
+| One query | 300 ms or less | pending |
+| Text longer than `maxInputTokens` | none | pending |
+
 ## Model files
 
 The repo does not contain model files. `.gitignore` excludes `*.litertlm` and `*.tflite`.
