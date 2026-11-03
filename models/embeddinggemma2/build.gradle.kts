@@ -5,3 +5,7 @@ plugins {
 dependencies {
     api(project(":core"))
 }
+
+dependencies {
+    testImplementation(project(":testing"))
+}

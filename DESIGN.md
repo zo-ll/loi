@@ -286,6 +286,13 @@ loi sets the LiteRT-LM native log level to `INFINITY` by default, as forma does.
 Source: forma `docs/model-policy.md` and `LiteRtInferenceConfig.kt`. The model card supplies the allowed sizes.
 Warning: vectors with different dimensions, prefixes, or artifacts are not compatible. `Embedding.cosine` fails if the two `modelId` or `dimensions` values are different.
 
+The model ID is `embeddinggemma-2-text-270m-mrl<dimensions>`, for example `embeddinggemma-2-text-270m-mrl256`.
+It does not include the artifact. At level `STRICT`, only the known artifact loads, so the ID is exact.
+At level `WARN` or `OFF`, a different file with the same output size gives the same ID. The caller must use `ModelInfo.verification` to keep such vectors apart.
+
+The caller text limit is 16,384 characters, from the forma limits. The prefix does not count.
+The SDK behavior for a text with more tokens than `maxInputTokens` is not known yet. Issue #8 checks it on the device.
+
 ## 11. Extraction map
 
 | forma source | loi target | Change |
