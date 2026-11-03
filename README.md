@@ -6,6 +6,11 @@ You supply a model file and call the loi API. loi owns the engine, the worker th
 Version 1 supports EmbeddingGemma 2 Text 270M on LiteRT-LM.
 The library is in development. Read [DESIGN.md](DESIGN.md) for the API, the modules, and the build plan.
 
+## Device support
+
+loi runs on Android 7.0 (API 24) or later, on `arm64-v8a` and `x86_64` devices only.
+LiteRT-LM 0.18.0 does not include a native library for 32-bit ARM (`armeabi-v7a`).
+
 ## Requirements
 
 - JDK 21.
