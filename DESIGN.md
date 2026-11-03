@@ -167,6 +167,25 @@ fun interface EmbeddingEngineFactory { fun create(options: EngineOptions): Embed
 The model spec supplies the values. The runtime maps them to `EmbeddingEngineConfig` and `EmbeddingOptions` of LiteRT-LM.
 The port uses no SDK type, so a later iOS runtime can implement the same port.
 
+`core` also defines two more contracts:
+
+```kotlin
+interface EmbeddingSpec {                           // Implemented by a model module
+    val modelId: String                             // Identifies the vector space
+    val dimensions: Int
+    val normalized: Boolean                         // The embedder checks the L2 norm if true
+    val maxInputCharacters: Int                     // Limit for the caller text, without the prefix
+    fun prefix(task: EmbeddingTask): String
+}
+
+fun interface ModelPreparer {                       // Implemented by the file check (issue #4)
+    fun prepare(): PreparedModel                    // Runs on the worker before each load
+}
+class PreparedModel(val options: EngineOptions, val verification: VerificationResult)
+```
+
+`SerialEmbedder(spec, preparer, factory)` connects the three contracts. It is the only `Embedder` implementation in `core`.
+
 ## 7. Threading, cancellation, and lifetime
 
 Each embedder owns one single-thread dispatcher. Only that thread touches the engine.
@@ -178,7 +197,8 @@ Load is lazy. The first `embed` call, or an explicit `load()` call, verifies the
 Cancellation follows the coroutine rules:
 
 - A cancel before the SDK call starts stops the call. loi does not call the SDK.
-- A cancel during the SDK call cannot stop the native work. The worker finishes the call and discards the result.
+- A cancel during the SDK call cannot stop the native work. The caller resumes at once with `CancellationException`. The worker finishes the call and discards the result.
+- A cancel during `embedAll` stops the remaining texts after the current SDK call.
 - File verification and engine initialization cannot stop in the middle.
 
 `release()` waits for the active call, closes the engine, and keeps the embedder open. The next call loads again.
@@ -229,6 +249,7 @@ All errors extend `LoiException`, a sealed class:
 | `Resource` | The engine failed to close. The embedder is poisoned. |
 
 Cancellation uses the standard `CancellationException`, not a `LoiException`.
+`LoiException` turns off coroutine stack-trace recovery with `CopyableThrowable`. Without this, the caller can get a copy whose `cause` is the original `LoiException`, not the engine failure.
 
 Error messages are fixed text. They do not contain input text, output values, or file paths.
 loi attaches the SDK exception as `cause`, so the app can choose to log it. SDK messages can contain input text or paths.
