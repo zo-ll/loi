@@ -1,0 +1,29 @@
+[versions]
+# AGP 9 has built-in Kotlin support. The Kotlin Gradle plugin version below sets the compiler.
+agp = "9.2.1"
+# LiteRT-LM 0.18.0 publishes Kotlin 2.4.0 metadata and Java 21 class files.
+kotlin = "2.4.0"
+java = "21"
+coroutines = "1.11.0"
+litertlm = "0.18.0"
+junit = "4.13.2"
+minSdk = "24"
+compileSdk = "37"
+targetSdk = "36"
+
+[libraries]
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+litertlm-android = { module = "com.google.ai.edge.litertlm:litertlm-android", version.ref = "litertlm" }
+junit = { module = "junit:junit", version.ref = "junit" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+# Build logic only.
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
+[plugins]
+loi-jvm = { id = "loi.jvm" }
+loi-android-library = { id = "loi.android-library" }
+loi-android-application = { id = "loi.android-application" }
+loi-boundaries = { id = "loi.boundaries" }
