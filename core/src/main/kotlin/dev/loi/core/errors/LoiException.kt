@@ -26,6 +26,7 @@ public sealed class LoiException(message: String, cause: Throwable? = null) :
             MISSING("The model file does not exist."),
             NOT_A_FILE("The model path is not a regular file."),
             UNREADABLE("The model file cannot be read."),
+            CHANGED("The model file changed during the check."),
         }
     }
 
