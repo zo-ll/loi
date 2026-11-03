@@ -12,3 +12,7 @@ dependencies {
     api(project(":models:embeddinggemma2"))
     implementation(project(":runtime-litertlm"))
 }
+
+dependencies {
+    testImplementation(project(":testing"))
+}
