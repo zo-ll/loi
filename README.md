@@ -103,7 +103,7 @@ The values come from one run on 2026-11-03: Nothing Phone (2a), Android 16 (API 
 | Warm load (hash cache and engine cache) | none | 313 ms in the same process (debug). 763–793 ms in a new process (minified). |
 | One query | 300 ms or less | 227 ms (debug). 180–193 ms (minified). The first minified run after the install took 369 ms. |
 | One document | none | 128–161 ms |
-| Text longer than `maxInputTokens` | none | Fails with `LoiException.Output(ENGINE_FAILURE)`. The SDK does not cut the text. |
+| Text longer than `maxInputTokens` | none | Fails with `LoiException.Input(TOO_MANY_TOKENS)`. The SDK does not cut the text. |
 
 The cold load includes the SHA-256 pass and the engine cache build. The OS file cache had the model file, so a load after a phone restart can be slower.
 The similarity values were the same in the debug and minified builds: related 0.9314, unrelated 0.5944.

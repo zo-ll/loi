@@ -41,11 +41,15 @@ public sealed class LoiException(message: String, cause: Throwable? = null) :
     /** The engine failed to initialize. */
     public class Load(cause: Throwable? = null) : LoiException("The model engine failed to load.", cause)
 
-    /** The input text breaks an input rule. */
-    public class Input(public val reason: Reason) : LoiException(reason.message) {
+    /**
+     * The input text breaks an input rule.
+     * loi finds [Reason.TOO_MANY_TOKENS] only in the engine call. Then [cause] is the engine failure.
+     */
+    public class Input(public val reason: Reason, cause: Throwable? = null) : LoiException(reason.message, cause) {
         public enum class Reason(internal val message: String) {
             BLANK("The input text is blank."),
-            TOO_LONG("The input text is longer than the limit."),
+            TOO_LONG("The input text is longer than the character limit."),
+            TOO_MANY_TOKENS("The input text has more tokens than the token limit."),
             NUL("The input text contains a NUL character."),
             UNPAIRED_SURROGATE("The input text contains an unpaired surrogate."),
         }

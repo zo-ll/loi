@@ -4,10 +4,12 @@ import com.google.ai.edge.litertlm.EmbeddingEngine as SdkEngine
 import com.google.ai.edge.litertlm.EmbeddingOptions
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.InputData
+import com.google.ai.edge.litertlm.LiteRtLmJniException
 import com.google.ai.edge.litertlm.LogSeverity
 import dev.loi.core.engine.EmbeddingEngine
 import dev.loi.core.engine.EmbeddingEngineFactory
 import dev.loi.core.engine.EngineOptions
+import dev.loi.core.engine.TooManyTokensException
 
 /**
  * The LiteRT-LM engine factory. `SerialEmbedder` wraps each SDK failure in a `LoiException`
@@ -33,11 +35,33 @@ internal class LiteRtEmbeddingEngine(
         sdk.initialize()
     }
 
-    override fun embed(prefixedText: String): FloatArray = sdk.compute(prefixedText, embedding).copyOf()
+    override fun embed(prefixedText: String): FloatArray = try {
+        sdk.compute(prefixedText, embedding).copyOf()
+    } catch (error: LiteRtLmJniException) {
+        if (SdkErrors.isTooManyTokens(error)) throw TooManyTokensException(error)
+        throw error
+    }
 
     override fun close() {
         if (sdk.isInitialized()) sdk.close()
     }
+}
+
+/**
+ * The SDK error forms that loi knows.
+ *
+ * LiteRT-LM 0.18.0 has one exception type, [LiteRtLmJniException], with a message and no error code.
+ * For an embedding with more tokens than `maxInputLength`, the message is `ComputeEmbedding failed: INVALID_ARGUMENT: `.
+ * The native detail text after the status is empty. Issue #17 checked this on a device: only a token overflow gave
+ * `INVALID_ARGUMENT`. Control characters, emoji, RTL text, BOM, private-use, and noncharacter text did not.
+ *
+ * Warning: this match depends on the SDK message. A change of the SDK version must run the device test
+ * `inputLongerThanTheTokenLimit` again.
+ */
+internal object SdkErrors {
+    private const val TOO_MANY_TOKENS = "ComputeEmbedding failed: INVALID_ARGUMENT"
+
+    fun isTooManyTokens(error: LiteRtLmJniException): Boolean = error.message?.startsWith(TOO_MANY_TOKENS) == true
 }
 
 /** The SDK calls that the adapter uses. Tests replace it, because the real engine needs the native library. */

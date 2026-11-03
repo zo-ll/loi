@@ -8,6 +8,7 @@ import dev.loi.core.api.VerificationResult
 import dev.loi.core.engine.EmbeddingEngine
 import dev.loi.core.engine.EmbeddingEngineFactory
 import dev.loi.core.engine.EmbeddingSpec
+import dev.loi.core.engine.TooManyTokensException
 import dev.loi.core.errors.LoiException
 import dev.loi.core.validate.InputRules
 import dev.loi.core.validate.VectorRules
@@ -121,6 +122,8 @@ public class SerialEmbedder(
         ensureActive()
         val vector = try {
             current.embed(prefixed)
+        } catch (error: TooManyTokensException) {
+            throw LoiException.Input(LoiException.Input.Reason.TOO_MANY_TOKENS, error)
         } catch (error: Throwable) {
             if (error is LoiException) throw error
             throw LoiException.Output(LoiException.Output.Reason.ENGINE_FAILURE, error)

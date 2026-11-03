@@ -17,7 +17,6 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
@@ -93,14 +92,15 @@ class EmbeddingGemma2DeviceTest {
         }
     }
 
-    /** Records the SDK behavior for a text with more tokens than the limit. DESIGN.md section 10 has this as unknown. */
+    /** Issue #17: the SDK fails for a text with more tokens than the limit, and loi reports an input error. */
     @Test fun inputLongerThanTheTokenLimit() = runBlocking<Unit> {
         val text = (1..1500).joinToString(" ") { "word$it" }
         Loi.embeddingGemma2(context, model, EmbeddingGemma2.Options(maxInputTokens = 128)).use { embedder ->
-            val outcome = runCatching { embedder.embed(text, EmbeddingTask.DOCUMENT) }
-            val error = outcome.exceptionOrNull()
-            if (error != null) assertIs<LoiException.Output>(error)
-            report("overLimitOutcome", if (error == null) "embedding" else "Output(${error.reason})")
+            val error = assertFailsWith<LoiException.Input> { embedder.embed(text, EmbeddingTask.DOCUMENT) }
+            assertEquals(LoiException.Input.Reason.TOO_MANY_TOKENS, error.reason)
+            report("overLimitOutcome", "Input(${error.reason})")
+            // The engine stays usable after the input error.
+            assertEquals(256, embedder.embed(SampleTexts.QUERY, EmbeddingTask.QUERY).toFloatArray().size)
         }
     }
 

@@ -155,6 +155,9 @@ interface EmbeddingEngine : AutoCloseable {
     fun embed(prefixedText: String): FloatArray    // Synchronous. Called on the worker only.
 }
 
+// An engine throws this when the text has more tokens than maxInputTokens.
+class TooManyTokensException(cause: Throwable?) : RuntimeException
+
 data class EngineOptions(
     val modelPath: String,
     val cacheDir: String,
@@ -271,7 +274,7 @@ All errors extend `LoiException`, a sealed class:
 | `ModelFile` | The file is missing, is not a file, cannot be read, or changed during the check. |
 | `Verification` | The size or hash does not match at level `STRICT`. |
 | `Load` | The engine failed to initialize. |
-| `Input` | The text is blank, too long, contains NUL, or has an unpaired surrogate. |
+| `Input` | The text is blank, is longer than the character limit, has more tokens than the token limit, contains NUL, or has an unpaired surrogate. |
 | `Output` | The vector has the wrong size, a non-finite value, or the wrong L2 norm. |
 | `Closed` | The embedder is closed. |
 | `Resource` | The engine failed to close. The embedder is poisoned. |
@@ -307,9 +310,13 @@ It does not include the artifact. At level `STRICT`, only the known artifact loa
 At level `WARN` or `OFF`, a different file with the same output size gives the same ID. The caller must use `ModelInfo.verification` to keep such vectors apart.
 
 The caller text limit is 16,384 characters, from the forma limits. The prefix does not count.
-The SDK does not cut a text with more tokens than `maxInputTokens`. The SDK call fails, and loi throws `LoiException.Output(ENGINE_FAILURE)`.
-Issue #8 found this on a Nothing Phone (2a) with 1,500 words and `maxInputTokens = 128`.
-Warning: a text in the 16,384-character limit can have more than 2,048 tokens. Such a text also fails with `ENGINE_FAILURE`. See open question 3.
+The SDK does not cut a text with more tokens than `maxInputTokens`. The SDK call fails, and loi throws `LoiException.Input(TOO_MANY_TOKENS)`.
+A text in the 16,384-character limit can have more than 2,048 tokens, so loi finds this error only in the engine call. The engine stays loaded.
+
+LiteRT-LM 0.18.0 has no error code. It throws `LiteRtLmJniException` with the message `ComputeEmbedding failed: INVALID_ARGUMENT: `.
+`runtime-litertlm` changes this message to the port exception `TooManyTokensException`. `SerialEmbedder` changes that exception to `Input(TOO_MANY_TOKENS)`.
+Issue #17 checked on a Nothing Phone (2a) that only a token overflow gives `INVALID_ARGUMENT`. Control characters, emoji, RTL text, BOM, private-use, and noncharacter text did not.
+Warning: the match depends on the SDK message. After an SDK update, run the device test `inputLongerThanTheTokenLimit` again.
 
 ## 11. Extraction map
 
@@ -356,9 +363,9 @@ Each step ends with a green build and green tests.
 
 1. Does `embedAll` need a progress callback for long lists?
 2. Do we want an optional event listener for timings (load, verify, SDK call), as forma `InferenceObservations` did?
-3. Must a text with too many tokens fail with `Input(TOO_LONG)` and not `Output(ENGINE_FAILURE)`? loi cannot count tokens before the SDK call, so this needs a tokenizer or an SDK error code.
 
 Closed on 2026-11-03:
 
 - The hash result is cached by path, size, and modification time. See section 8.
+- A text with too many tokens fails with `Input(TOO_MANY_TOKENS)`. loi reads the SDK error message. See section 10 and issue #17.
 - Version 1 has no content `Uri` import module. The caller supplies a `File`, and the sample app copies the picked file. The forma `ModelArtifactStore.import` code stays as the reference for a later `model-files` module.
