@@ -3,6 +3,7 @@ package dev.loi.core.runtime
 import dev.loi.core.api.EmbeddingTask.DOCUMENT
 import dev.loi.core.api.EmbeddingTask.QUERY
 import dev.loi.core.api.VerificationResult
+import dev.loi.core.engine.TooManyTokensException
 import dev.loi.core.errors.LoiException
 import dev.loi.testing.FakeEngineFactory
 import dev.loi.testing.FakePreparer
@@ -125,6 +126,18 @@ class SerialEmbedderTest {
         val error = assertFailsWith<LoiException.Output> { embedder.embed("a", QUERY) }
         assertEquals(LoiException.Output.Reason.ENGINE_FAILURE, error.reason)
         assertSame(cause, error.cause)
+        factory.embedFailure = null
+        embedder.embed("a", QUERY)
+        assertEquals(1, factory.engines.size)
+    }
+
+    @Test fun tooManyTokensIsAnInputErrorAndKeepsTheEngine() = test {
+        val cause = TooManyTokensException(IllegalArgumentException("sdk"))
+        factory.embedFailure = cause
+        val error = assertFailsWith<LoiException.Input> { embedder.embed("a", QUERY) }
+        assertEquals(LoiException.Input.Reason.TOO_MANY_TOKENS, error.reason)
+        assertSame(cause, error.cause)
+        assertFailsWith<LoiException.Input> { embedder.embedAll(listOf("a", "b"), DOCUMENT) }
         factory.embedFailure = null
         embedder.embed("a", QUERY)
         assertEquals(1, factory.engines.size)

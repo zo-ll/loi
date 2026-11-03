@@ -9,11 +9,22 @@ public interface EmbeddingEngine : AutoCloseable {
     /** Loads the model. The embedder calls this method once, before the first [embed] call. */
     public fun initialize()
 
-    /** Returns the raw vector for text that already has its task prefix. This call blocks. */
+    /**
+     * Returns the raw vector for text that already has its task prefix. This call blocks.
+     *
+     * Throws [TooManyTokensException] if the text has more tokens than [EngineOptions.maxInputTokens].
+     */
     public fun embed(prefixedText: String): FloatArray
 
     override fun close()
 }
+
+/**
+ * An engine throws this exception when the prefixed text has more tokens than [EngineOptions.maxInputTokens].
+ * The embedder changes it to `LoiException.Input` with the reason `TOO_MANY_TOKENS`. [cause] is the SDK failure.
+ */
+public class TooManyTokensException(cause: Throwable? = null) :
+    RuntimeException("The text has more tokens than the engine limit.", cause)
 
 /** Makes one engine for one load. The embedder calls it again after a release. */
 public fun interface EmbeddingEngineFactory {
