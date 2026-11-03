@@ -232,7 +232,19 @@ Before each load, loi compares the current path, size, and modification time wit
 
 Warning: a file with different bytes but the same path, size, and modification time passes the cached check. The owner accepted this risk on 2026-11-03 to make cold loads faster.
 
-The engine cache goes in a directory for each hash: `<noBackupFilesDir>/loi/cache/<sha256>/`. At level `OFF`, loi uses the file size and modification time in place of the hash.
+`FileModelPreparer` in `core/verify` implements this check. It takes a storage root and uses two folders under it:
+
+- `verify/`: one hash record for each canonical path. The record file name is a hash of the path, so it does not contain the path.
+- `cache/<key>/`: the engine cache for one model file. The key is the SHA-256. At level `OFF`, the key is `off-<size>-<modified>`.
+
+`loi-android` uses `<noBackupFilesDir>/loi` as the storage root.
+
+More rules:
+
+- At level `STRICT`, loi compares the size first. A file with no known size fails at once, with no hash.
+- If the size or modification time changes during the hash, the load fails with `ModelFile(CHANGED)`. loi does not write a record for that hash.
+- A damaged, unreadable, or unwritable record is a cache miss. It never fails a load.
+- The check uses `java.io.File` only, because `java.nio.file` needs Android API 26.
 
 ## 9. Errors and privacy
 
@@ -240,7 +252,7 @@ All errors extend `LoiException`, a sealed class:
 
 | Error | Cause |
 |---|---|
-| `ModelFile` | The file is missing, is not a file, or cannot be read. |
+| `ModelFile` | The file is missing, is not a file, cannot be read, or changed during the check. |
 | `Verification` | The size or hash does not match at level `STRICT`. |
 | `Load` | The engine failed to initialize. |
 | `Input` | The text is blank, too long, contains NUL, or has an unpaired surrogate. |
